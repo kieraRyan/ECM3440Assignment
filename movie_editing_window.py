@@ -5,6 +5,8 @@ import sv_ttk
 import cv2 as cv
 import db_processor
 import os
+from PIL import Image, ImageTk
+import numpy as np
 
 class SceneSelection(ttk.PanedWindow):
     def __init__(self, parent, movie_info):
@@ -97,22 +99,51 @@ class SceneSelection(ttk.PanedWindow):
     def create_new_still (self):
         cam = cv.VideoCapture(0)
 
-        img_counter = 0
+        brightness = 2
+        contrast = 1
 
         while True:
             ret, frame = cam.read()
+             
+            frame = cv.addWeighted(frame, contrast, np.zeros(frame.shape, frame.dtype), 0, brightness) 
+
             cv.imshow('New Still', frame)
-            #cv.imshow('Adjusted',drawonme)
+    
+            flipped = cv.flip(frame, 1)
+
+            # cv.imshow('flipped', flipped)
 
             key_pressed = cv.waitKey(10)
             # esc key pressed
             if key_pressed%256 == 27:
                 break
-            # space bar clicked
+            # elif key_pressed==-1:  # normally -1 returned,so don't print it
+            #     continue
+            # else:
+            #     print (key_pressed)
+            # > key pressed
+            elif key_pressed%256 == 46:
+                brightness += 2
+                print('brightness ' + str(brightness))
+                # frame = cv.rotate(frame, cv.ROTATE_90_CLOCKWISE)
+            # < key pressed
+            elif key_pressed%256 == 44:
+                brightness -= 2
+                print('brightness ' + str(brightness))
+            # + key pressed
+            elif key_pressed%256 == 61:
+                contrast += 0.1
+                print('contrast ' + str(contrast))
+                # frame = cv.rotate(frame, cv.ROTATE_90_CLOCKWISE)
+            # - key pressed
+            elif key_pressed%256 == 45:
+                contrast -= 0.1
+                print('contrast ' + str(contrast))
+                # frame = cv.rotate(frame, cv.ROTATE_90_COUNTERCLOCKWISE)
+
+            # # space bar clicked
             elif key_pressed%256 == 32:
-                self.save_still(frame)
-                
-                img_counter += 1
+                self.save_still(flipped)
 
         cam.release()
         cv.destroyAllWindows()
@@ -177,6 +208,9 @@ class StillManagement (ttk.PanedWindow):
     def __init__(self, parent, movie_info):
         super().__init__(parent)
 
+        self.current_still_path = 'test.png'
+        self.current_image = Image.open(self.current_still_path)
+
         self.pane_1 = ttk.Frame(self, padding=(0, 0, 0, 10))
         self.pane_2 = ttk.Frame(self, padding=(0, 10, 5, 0))
         self.add(self.pane_1, weight=1)
@@ -184,11 +218,6 @@ class StillManagement (ttk.PanedWindow):
 
         self.movie_info = movie_info
         self.columnconfigure(0, weight=1)
-
-        self.still = tkinter.PhotoImage(file='test.png')
-        self.image = tkinter.Label(self.pane_1, image=self.still)
-        self.image.pack()
-        self.image.img = self.still
 
         self.var = tkinter.IntVar(self, 47)
         self.notebook = ttk.Notebook(self.pane_2)
@@ -213,26 +242,37 @@ class StillManagement (ttk.PanedWindow):
         self.progress = ttk.Progressbar(self.tab_1, value=0, variable=self.var, mode="determinate")
         self.progress.grid(row=0, column=1, padx=(10, 20), pady=(20, 10), sticky="ew")
 
-        self.switch = ttk.Checkbutton(
-            self.tab_1, text="Dark theme", style="Switch.TCheckbutton", command=sv_ttk.toggle_theme
-        )
-        self.switch.grid(row=1, column=0, columnspan=2, pady=10)
-        
-    
-    def login_unsuccessful_popup(self):
-        """Creates an 'unsucessful login' popup screen in the case of exception when trying to authenticate 
-        with the database."""
-        self.popup = tkinter.Toplevel(self.window)
-        self.popup.geometry('500x100')
-        self.popup.resizable(0,0)
-        errorMessage= ttk.Label(self.popup, text = "Login unsuccessful")
-        errorMessage.pack()
-        escape_button = ttk.Button(self.popup, text= 'OK')
-        escape_button.pack()
-        escape_button.bind('<Button-1>', self.close_popup)
+        # self.switch = ttk.Checkbutton(
+        #     self.tab_1, text="Dark theme", style="Switch.TCheckbutton", command=sv_ttk.toggle_theme
+        # )
+        # self.switch.grid(row=1, column=0, columnspan=2, pady=10)
 
-    def close_popup(self, event):
-        """Popup if closed when OK button selected"""
-        self.popup.destroy()
+        self.image = tkinter.Label(self.pane_1)
+        self.image.pack()
+
+        self.rotate_btn = ttk.Button(self.tab_1, text ="Rotate", width = 10, command = self.rotate_current_image)
+        self.rotate_btn.grid(row=1, column=0, columnspan=1, pady=10)
+
+        self.save_still = ttk.Button(self.tab_1, text ="Save Changes", width = 10, command = self.update_still)
+        self.save_still.grid(row=1, column=3, columnspan=1, pady=10)
+
+        self.load_image()
+    
+    def load_image (self):
+        self.still = ImageTk.PhotoImage(self.current_image)
+
+        self.image.configure(image= self.still)
+        self.image.image = self.still
+
+    def rotate_current_image (self):
+        # self.current_still_path = 'Movie_2\Movie_2_1_1.png'
+        # self.current_image = Image.open(self.current_still_path)
+        rotated_image = self.current_image.rotate(90)
+
+        self.current_image = rotated_image
+        self.load_image()      
+    
+    def update_still (self):
+        self.current_image.save(self.current_still_path)
 
 
