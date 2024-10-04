@@ -1,7 +1,7 @@
 
 import cv2 as cv
 import tkinter
-from tkinter import ttk
+from tkinter import ttk 
 import sv_ttk
 import movie_selection_window
 import movie_editing_window

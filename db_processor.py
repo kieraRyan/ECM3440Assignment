@@ -109,7 +109,7 @@ def create_new_movie () -> list:
     # return id of inserted movie
     return [cursor.lastrowid, new_name]
 
-def calculate_next_still_name (movie_name) -> str:
+def calculate_next_still_name (scene_name) -> str:
     connection = get_connection()
     cursor = connection.cursor()
             
@@ -117,9 +117,9 @@ def calculate_next_still_name (movie_name) -> str:
     all_stills = cursor.fetchall();
 
     if len(all_stills) < 1:
-        name = movie_name + '_1' + '.png'
+        name = scene_name + '_1' + '.png'
     else:
-        name = movie_name + '_' + str(all_stills[0][0] + 1) + '.png'
+        name = scene_name + '_' + str(all_stills[0][0] + 1) + '.png'
 
     connection.commit()
     connection.close()
@@ -136,9 +136,56 @@ def create_new_still (still_name, scene_id, order, path) -> int:
     # return id of inserted movie
     return cursor.lastrowid
 
+def calculate_next_scene_name (movie_name, movie_id) -> str:
+    connection = get_connection()
+    cursor = connection.cursor()
+            
+    cursor.execute('SELECT id FROM "SCENE"  WHERE movieId = ? ORDER BY id DESC', (movie_id, ))
+    all_stills = cursor.fetchall();
+
+    if len(all_stills) < 1:
+        name = movie_name + '_1'
+    else:
+        name = movie_name + '_' + str(all_stills[0][0] + 1)
+
+    connection.commit()
+    connection.close()
+    return name
+
+def get_next_scene_num_for_movie (movie_id) -> int:
+    connection = get_connection()
+    cursor = connection.cursor()
+            
+    cursor.execute('SELECT "order" FROM "SCENE" WHERE movieId = ? ORDER BY id DESC', (movie_id, ))
+    scenes_in_movie = cursor.fetchall();
+
+    if len(scenes_in_movie) < 1:
+        order = 1
+    else:
+        order = scenes_in_movie[0][0] + 1
+
+    connection.commit()
+    connection.close()
+    return order
+
+def create_new_scene (movie_id, movie_name) -> list:
+    
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute('INSERT INTO SCENE (name, movieId, "order") VALUES (?, ?, ?);', (calculate_next_scene_name(movie_name, movie_id), movie_id, get_next_scene_num_for_movie(movie_id)))
+    connection.commit()
+
+    cursor.execute('SELECT id, name, "order" FROM SCENE WHERE id= ?', (int(cursor.lastrowid), ))
+    insert_record = cursor.fetchone()
+    connection.close()
+
+    return insert_record
+
 def get_connection():
     cnn = sqlite3.connect('movie_application_db.sqlite3')
     return cnn
+
 # create_tables()
 
 
