@@ -4,11 +4,16 @@ import cv2 as cv
 import db_processor
 import os
 import numpy as np
+from StillManagement import StillManagement
+from PIL import Image
 
 class SceneSelection(ttk.PanedWindow):
-    def __init__(self, parent, movie_info):
+    def __init__(self, parent, movie_info, still_window: StillManagement):
         super().__init__(parent)
 
+        self.parent_window = parent
+        # whilst i dont like it, we need some way of accessing neighbouring class...
+        self.still_window = still_window
         self.movie_info = movie_info
 
         self.pane_1 = ttk.Frame(self, padding=(0, 0, 0, 10))
@@ -28,6 +33,16 @@ class SceneSelection(ttk.PanedWindow):
         self.scrollbar = ttk.Scrollbar(self.pane_1)
         self.scrollbar.pack(side="right", fill="y")
 
+        # self.tree = ttk.Treeview(
+        #     self.pane_1,
+        #     columns=(1, 2),
+        #     height=11,
+        #     selectmode="browse",
+        #     show=("tree",),
+        #     yscrollcommand=self.scrollbar.set,
+        # )
+
+
         self.tree = ttk.Treeview(
             self.pane_1,
             columns=self.scene_fields,
@@ -45,16 +60,16 @@ class SceneSelection(ttk.PanedWindow):
             self.tree.heading(heading, text=heading)
 
         tree_data = db_processor.get_scenes_for_movie(self.movie_info[0])
-
         for item in tree_data:
             self.tree.insert('', tkinter.END, values=item, iid= item[0])
-
+        
+        still_data = db_processor.get_stills_for_movie(self.movie_info[0]) # order not working corret
+        # (16, 'Movie_2_6_16.png', 6, 2, 'Movie_2/Movie_2_6_16.png')
+        for item in still_data:
+            self.tree.insert(parent=item[2], index="end", iid= item[0], values= [item[0], item[1], item[3]])
     
         self.tree.bind('<<TreeviewSelect>>', self.scene_selected)
         self.tree.bind('<Button-1>', self.handle_click)
-       
-        # self.tree.selection_set(14)
-        # self.tree.see(7)
 
         self.notebook = ttk.Notebook(self.pane_2)
         self.notebook.pack(expand=True, fill="both")
@@ -193,8 +208,16 @@ class SceneSelection(ttk.PanedWindow):
         # change directory back to og
         os.chdir(current_path)
 
+        file_path = folder_path + '/' + img_name
+        print(file_path)
+
         # save image to db now
-        db_processor.create_new_still(img_name, self.movie_info[0], 1, folder_path)
+        db_processor.create_new_still(img_name, self.selected_scene_info[0], file_path)
+
+        # update displayed image path in parent object and force refresh on neighbouring class
+        self.parent_window.current_still_path = file_path
+        self.still_window.current_image = Image.open(self.parent_window.current_still_path)
+        self.still_window.load_image()
     
     def scene_selected (self, event):
        # grab the selected record

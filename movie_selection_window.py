@@ -86,7 +86,7 @@ class MovieSelectionWindow:
         self.create_new_window(movie_info)
     
     def edit_movie (self):
-        self.create_new_window([self.selectedRecord[1], self.selectedRecord[1]])
+        self.create_new_window([self.selectedRecord[0], self.selectedRecord[1]])
        
     def create_new_window (self, window_info):
         self.win.destroy()

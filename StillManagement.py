@@ -7,8 +7,9 @@ class StillManagement (ttk.PanedWindow):
     def __init__(self, parent, movie_info):
         super().__init__(parent)
 
-        self.current_still_path = 'test.png'
-        self.current_image = Image.open(self.current_still_path)
+        self.parent_window = parent
+
+        self.current_image = Image.open(self.parent_window.current_still_path)
 
         self.pane_1 = ttk.Frame(self, padding=(0, 0, 0, 10))
         self.pane_2 = ttk.Frame(self, padding=(0, 10, 5, 0))
@@ -123,7 +124,7 @@ class StillManagement (ttk.PanedWindow):
 
     def transform_image(self):
         # grab original image so that we dont transform the current morphed image - need to use our og image as a base
-        self.current_image = Image.open(self.current_still_path)
+        self.current_image = Image.open(self.parent_window.current_still_path)
         # set image brightness
         brightness_percent = ((self.brightness_val.get() - 50) / 100) + 1
         enhancer = ImageEnhance.Brightness(self.current_image)
@@ -143,8 +144,6 @@ class StillManagement (ttk.PanedWindow):
             self.current_image = self.current_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         
         # if not a full circle rotation
-        print('rotations ' + str(self.rotations))
-        print('modulus ' + str(self.rotations % 4))
         if self.rotations % 4 != 0:
             for i in range((self.rotations % 4)):
                 self.current_image = self.current_image.rotate(90)
@@ -165,6 +164,6 @@ class StillManagement (ttk.PanedWindow):
         self.transform_image()
 
     def update_still (self):
-        self.current_image.save(self.current_still_path)
+        self.current_image.save(self.parent_window.current_still_path)
 
 

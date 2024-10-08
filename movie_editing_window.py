@@ -8,6 +8,9 @@ class AppMain (ttk.Frame):
         for index in range(2):
             self.columnconfigure(index, weight=1)
             self.rowconfigure(index, weight=1)
+        
+        self.current_still_path = 'test.png'
 
-        sm.StillManagement(self, movie_info).grid(row=0, column=0, padx=(0, 10), pady=(0, 20), sticky="nsew")
-        ss.SceneSelection(self, movie_info).grid(row=0, column=3, rowspan=2, padx=10, pady=(10, 0), sticky="nsew")
+        still_window = sm.StillManagement(self, movie_info)
+        still_window.grid(row=0, column=0, padx=(0, 10), pady=(0, 20), sticky="nsew")
+        ss.SceneSelection(self, movie_info, still_window).grid(row=0, column=3, rowspan=2, padx=10, pady=(10, 0), sticky="nsew")
