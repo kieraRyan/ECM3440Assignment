@@ -3,7 +3,6 @@ import tkinter
 import sv_ttk
 import movie_selection_window
 
-
 window= tkinter.Tk()
 window.title('Home')
 window.geometry("800x700+10+10")

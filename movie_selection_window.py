@@ -1,9 +1,10 @@
-import re
 import tkinter
 from tkinter import ttk
 import db_processor
 import movie_editing_window
 import sv_ttk
+import os
+import cv2
 
 class MovieSelectionWindow:
 
@@ -24,6 +25,8 @@ class MovieSelectionWindow:
         self.edit_movie_button = ttk.Button(win, text= 'Edit', width = 15, command =self.edit_movie)
         self.edit_movie_button.state(["disabled"])
         self.new_movie_button = ttk.Button(win, text= 'New Movie', width = 15, command =self.add_movie)
+        self.export_movie_button = ttk.Button(win, text= 'Download as Movie file', width = 15, command =self.export_movie)
+        self.export_movie_button.state(["disabled"])
         self.exit_button = ttk.Button(win, text= 'Exit', width = 15, command =self.exit)
         
         # create list of movies
@@ -32,9 +35,10 @@ class MovieSelectionWindow:
         # place all widgets
         self.title.place(x= 20, y=20)
 
-        self.new_movie_button.place(x=450, y=150)
-        self.edit_movie_button.place(x=450, y=250)
-        self.exit_button.place(x= 450, y=350)
+        self.new_movie_button.place(x=450, y=100)
+        self.edit_movie_button.place(x=450, y=200)
+        self.export_movie_button.place(x= 450, y=300)
+        self.exit_button.place(x= 450, y=400)
 
         self.movies.place(x = 20, y= 50)
 
@@ -68,8 +72,9 @@ class MovieSelectionWindow:
     def select_customer(self, event):
         self.selectedRecord = self.movies.item(self.movies.focus(), 'values')
 
-        # enable the edit button as movie has been selected
+        # enable the edit/ export buttons as movie has been selected
         self.edit_movie_button.state(["!disabled"])
+        self.export_movie_button.state(["!disabled"])
     
     def handle_click(self, event):
         """Event method called when treeview clicked/ when user attempts to resize columns, which
@@ -111,7 +116,7 @@ class MovieSelectionWindow:
 
     def create_popup(self, errorMessage):
         """Creates popup window showing relevant error message, depending on reason for exception."""
-        self.popup = ttk.Toplevel(self.win)
+        self.popup = tkinter.Toplevel(self.win)
         self.popup.geometry('500x100')
         self.popup.resizable(0,0)
         errorMessage= tkinter.Label(self.popup, text = errorMessage)
@@ -119,3 +124,23 @@ class MovieSelectionWindow:
         escape_button = ttk.Button(self.popup, text= 'OK')
         escape_button.pack()
         escape_button.bind('<Button-1>', self.close_popup)
+    
+    def export_movie(self):
+        
+        image_folder = self.selectedRecord[1]
+        video_name = f'{image_folder}.avi'
+        
+        #TODO: Chnage this to compile the movie based on order of scenes and order of stills
+        images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
+        frame = cv2.imread(os.path.join(image_folder, images[0]))
+        height, width, layers = frame.shape
+
+        video = cv2.VideoWriter(video_name, 0, 1, (width,height))
+
+        for image in images:
+            video.write(cv2.imread(os.path.join(image_folder, image)))
+
+        cv2.destroyAllWindows()
+        video.release()
+
+        self.create_popup('Movie created and saved to movies folder')
