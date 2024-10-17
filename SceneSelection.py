@@ -23,7 +23,8 @@ class SceneSelection(ttk.PanedWindow):
 
         self.var = tkinter.IntVar(self, 47)
 
-        self.scene_fields = ['Id', 'Name', 'Order']
+        self.scene_fields = ['Id', 'Scenes', 'Order']
+        self.still_fields = ['Id', 'Stills', 'Order']
 
         self.tab_headings = ['Scenes', 'Stills']
 
@@ -31,45 +32,54 @@ class SceneSelection(ttk.PanedWindow):
 
     def add_widgets(self):
         self.scrollbar = ttk.Scrollbar(self.pane_1)
-        self.scrollbar.pack(side="right", fill="y")
 
-        # self.tree = ttk.Treeview(
-        #     self.pane_1,
-        #     columns=(1, 2),
-        #     height=11,
-        #     selectmode="browse",
-        #     show=("tree",),
-        #     yscrollcommand=self.scrollbar.set,
-        # )
-
-
-        self.tree = ttk.Treeview(
+        self.scene_tree = ttk.Treeview(
             self.pane_1,
             columns=self.scene_fields,
-            height=11,
+            height=6,
             selectmode="browse",
             show=("headings",),
             yscrollcommand=self.scrollbar.set,
         )
-        self.scrollbar.config(command=self.tree.yview)
+        self.scrollbar.config(command=self.scene_tree.yview)
 
-        self.tree.pack(expand=True, fill="both")
+        self.scene_tree.pack(expand=True, fill="both")
 
         for heading in self.scene_fields:
-            self.tree.column(heading, anchor="w", width=100) 
-            self.tree.heading(heading, text=heading)
+            self.scene_tree.column(heading, anchor="w", width=100) 
+            self.scene_tree.heading(heading, text=heading)
 
         tree_data = db_processor.get_scenes_for_movie(self.movie_info[0])
         for item in tree_data:
-            self.tree.insert('', tkinter.END, values=item, iid= item[0])
+            self.scene_tree.insert('', tkinter.END, values=item, iid= item[0])
         
-        still_data = db_processor.get_stills_for_movie(self.movie_info[0]) # order not working corret
-        # (16, 'Movie_2_6_16.png', 6, 2, 'Movie_2/Movie_2_6_16.png')
-        for item in still_data:
-            self.tree.insert(parent=item[2], index="end", iid= item[0], values= [item[0], item[1], item[3]])
-    
-        self.tree.bind('<<TreeviewSelect>>', self.scene_selected)
-        self.tree.bind('<Button-1>', self.handle_click)
+        self.scene_tree.bind('<<TreeviewSelect>>', self.scene_selected)
+        self.scene_tree.bind('<Button-1>', self.handle_click)
+
+        # scrollbars
+        self.still_scrollbar = ttk.Scrollbar(self.pane_1)
+        self.still_scrollbar.pack(side="right", fill="y")
+        self.scrollbar.pack(side="right", fill="y")
+
+        self.still_tree = ttk.Treeview(
+            self.pane_1,
+            columns=self.still_fields,
+            height=6,
+            selectmode="browse",
+            show=("headings",),
+            yscrollcommand=self.still_scrollbar.set,
+        )
+        
+        self.still_scrollbar.config(command=self.still_tree.yview)
+
+        self.still_tree.pack(expand=True, fill="both")
+
+        for heading in self.still_fields:
+            self.still_tree.column(heading, anchor="w", width=100) 
+            self.still_tree.heading(heading, text=heading)
+        
+        self.still_tree.bind('<<TreeviewSelect>>', self.still_selected)
+        self.still_tree.bind('<Button-1>', self.handle_click)
 
         self.notebook = ttk.Notebook(self.pane_2)
         self.notebook.pack(expand=True, fill="both")
@@ -104,8 +114,8 @@ class SceneSelection(ttk.PanedWindow):
         scene_info = db_processor.create_new_scene(self.movie_info[0], self.movie_info[1])
 
         # add scene to list in UI and select it for editing
-        self.tree.insert('', tkinter.END, values= scene_info, iid= scene_info[0])
-        self.tree.selection_set(scene_info[0])
+        self.scene_tree.insert('', tkinter.END, values= scene_info, iid= scene_info[0])
+        self.scene_tree.selection_set(scene_info[0])
 
     
     def create_new_still (self):
@@ -214,23 +224,62 @@ class SceneSelection(ttk.PanedWindow):
         # save image to db now
         db_processor.create_new_still(img_name, self.selected_scene_info[0], file_path)
 
+        self.load_new_image_on_neighbour(file_path)
+        self.update_still_data()
+
+    def load_new_image_on_neighbour (self, file_path):
         # update displayed image path in parent object and force refresh on neighbouring class
         self.parent_window.current_still_path = file_path
         self.still_window.current_image = Image.open(self.parent_window.current_still_path)
+        # reset editing controls when new image loaded
+        self.still_window.default_editing_values()
+        self.still_window.default_label_values()
         self.still_window.load_image()
     
     def scene_selected (self, event):
        # grab the selected record
-        self.selected_scene_info = self.tree.item(self.tree.selection(), 'values')
+        self.selected_scene_info = self.scene_tree.item(self.scene_tree.selection(), 'values')
 
-        # enable the still creation button button as movie has been selected
+        # unselect any stills
+        if len(self.still_tree.selection()) > 0:
+            self.still_tree.selection_remove(self.still_tree.selection()[0])
+
+        self.update_still_data()
+
+        # enable the still creation button button as scene has been selected
         self.new_still_btn.state(["!disabled"])
+    
+    def update_still_data(self):
+        # STILL.id, STILL.name, SCENE.id AS scene_id, STILL."order", STILL.filePath
+        # (16, 'Movie_2_6_16.png', 6, 2, 'Movie_2/Movie_2_6_16.png')
+        self.still_data = db_processor.get_stills_for_scene(self.selected_scene_info[0])
+
+         # clear the still treeview child data
+        for item in self.still_tree.get_children():
+            self.still_tree.delete(item)
+
+        # add stills from newly selected scene to treeview
+        for item in self.still_data:
+            self.still_tree.insert('', index="end", iid= item[0], values= [item[0], item[1], item[3]])
+
+        # update on parent window for playing later
+        self.parent_window.stills_to_play = self.still_data
+
+    def still_selected (self, event):
+       # grab the selected record and its filepath
+       self.selected_still_info = self.still_tree.item(self.still_tree.selection(), 'values')
+       path = ''
+       for still in self.still_data:
+            if (str(still[0]) == str(self.selected_still_info[0])):
+                path = still[4]
+
+       self.load_new_image_on_neighbour(path)
     
     def handle_click(self, event):
         """Event method called when treeview clicked/ when user attempts to resize columns, which
         prevents this action."""
         # stop the columns from being resized
-        if self.tree.identify_region(event.x, event.y) == "separator":
+        if self.scene_tree.identify_region(event.x, event.y) == "separator":
             return "break"
     
     def exit(self):

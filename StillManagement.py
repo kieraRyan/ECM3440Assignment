@@ -20,6 +20,10 @@ class StillManagement (ttk.PanedWindow):
         self.columnconfigure(0, weight=1)
 
         self.var = tkinter.IntVar(self, 47)
+        self.sharpness_val = tkinter.IntVar()
+        self.brightness_val = tkinter.IntVar()
+        self.contrast_val = tkinter.IntVar()
+
         self.notebook = ttk.Notebook(self.pane_2)
         self.notebook.pack(expand=True, fill="both")
 
@@ -34,20 +38,14 @@ class StillManagement (ttk.PanedWindow):
                 getattr(self, heading).columnconfigure(index, weight=1)
                 getattr(self, heading).rowconfigure(index, weight=1)
 
-        self.scale = ttk.Scale(
-            self.Play,
-            from_=100,
-            to=0,
-            variable=self.var,
-        )
-        
-        self.scale.grid(row=0, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
-
         self.progress = ttk.Progressbar(self.Play, value=0, variable=self.var, mode="determinate")
-        self.progress.grid(row=0, column=1, padx=(10, 20), pady=(20, 10), sticky="ew")
+        self.progress.grid(row=0, columnspan=2, padx=(10, 20), pady=(20, 10), sticky="ew")
+
+        self.play_button = ttk.Button(self.Play, text ="Play", width = 15, command = self.play_scene)
+        self.play_button.grid(row=1, column=0,  padx=(20, 10), pady=(20, 10), sticky="ew")
 
         self.save_still = ttk.Button(self.Play, text ="Save Changes", width = 15, command = self.update_still)
-        self.save_still.grid(row=1, column=0, columnspan=2, pady=10)
+        self.save_still.grid(row=1, column=1,  padx=(20, 10), pady=(20, 10), sticky="ew")
 
         # self.switch = ttk.Checkbutton(
         #     self.tab_1, text="Dark theme", style="Switch.TCheckbutton", command=sv_ttk.toggle_theme
@@ -57,9 +55,10 @@ class StillManagement (ttk.PanedWindow):
         self.image = tkinter.Label(self.pane_1)
         self.image.pack()
 
+        self.default_editing_values()
+
         self.sharpness_label = tkinter.Label(self.Editing, text='Sharpness: 0')
         self.sharpness_label.grid(row=1, column=0,  padx=(20, 10), pady=(20, 10), sticky="ew")
-        self.sharpness_val = tkinter.IntVar(self, 0)
         self.sharpness_slider = ttk.Scale(
             self.Editing,
             from_=-2.0,
@@ -70,17 +69,13 @@ class StillManagement (ttk.PanedWindow):
         self.sharpness_slider.grid(row=0, column=0, padx=(10, 20), pady=(20, 10), sticky="ew")
 
         self.rotate_btn = ttk.Button(self.Editing, text ="Rotate", width = 10, command = self.rotate_current_image)
-        self.rotations = 0
         self.rotate_btn.grid(row=0, column=1, pady=10)
         self.flip_btn = ttk.Button(self.Editing, text ="Flip", width = 10, command = self.flip_current_image)
-        self.image_flipped = False
         self.flip_btn.grid(row=1, column=1, pady=10)
 
 
         self.brightness_label = tkinter.Label(self.Brightness, text='Brightness: 50%')
         self.brightness_label.grid(row=1, column=0,  padx=(20, 10), pady=(20, 10), sticky="ew")
-
-        self.brightness_val = tkinter.IntVar(self, 50)
         self.brightness_slider = ttk.Scale(
             self.Brightness,
             from_=0,
@@ -92,7 +87,6 @@ class StillManagement (ttk.PanedWindow):
 
         self.contrast_label = tkinter.Label(self.Brightness, text='Contrast: 50%')
         self.contrast_label.grid(row=1, column=1,  padx=(20, 10), pady=(20, 10), sticky="ew")
-        self.contrast_val = tkinter.IntVar(self, 50)
         self.contrast_slider = ttk.Scale(
             self.Brightness,
             from_=0,
@@ -109,6 +103,18 @@ class StillManagement (ttk.PanedWindow):
 
         self.image.configure(image= self.still)
         self.image.image = self.still
+
+    def default_editing_values(self):
+        self.image_flipped = False
+        self.sharpness_val.set(0)
+        self.rotations = 0
+        self.brightness_val.set(50)
+        self.contrast_val.set(50)
+
+    def default_label_values(self):
+        self.brightness_label.config(text = f"Brightness: {int(self.brightness_slider.get())}%")
+        self.sharpness_label.config(text = f"Sharpness: {int(self.sharpness_slider.get())}")
+        self.contrast_label.config(text = f"Contrast: {int(self.contrast_slider.get())}%")
 
     def rotate_current_image (self):
         # keep track of rotations for when we do image processing later
@@ -165,5 +171,29 @@ class StillManagement (ttk.PanedWindow):
 
     def update_still (self):
         self.current_image.save(self.parent_window.current_still_path)
+    
+    def play_scene (self):
+        self.current_index = 0
+        
+        self.play_still()            
+        
+        self.default_editing_values()
+        self.default_label_values()
+    
+    def play_still (self):
+        # get next still to play
+        try:
+            still = self.parent_window.stills_to_play[self.current_index]
+        except IndexError:
+            # if index is out of range, we've reached end of list and can return/ abort
+            return
+       
+        self.parent_window.current_still_path = still[4]
+        self.current_image = Image.open(still[4])
+        self.load_image()
+        # increment index for next scene
+        self.current_index += 1
+        self.after(300, self.play_still)
+    
 
 

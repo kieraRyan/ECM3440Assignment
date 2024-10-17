@@ -217,4 +217,4 @@ def get_stills_for_movie (movie_id: int) -> object:
     return records
 
 
-create_tables()
+# create_tables()

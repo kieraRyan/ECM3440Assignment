@@ -10,6 +10,7 @@ class AppMain (ttk.Frame):
             self.rowconfigure(index, weight=1)
         
         self.current_still_path = 'test.png'
+        self.stills_to_play = []
 
         still_window = sm.StillManagement(self, movie_info)
         still_window.grid(row=0, column=0, padx=(0, 10), pady=(0, 20), sticky="nsew")
