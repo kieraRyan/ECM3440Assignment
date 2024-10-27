@@ -101,13 +101,14 @@ class SceneSelection(ttk.PanedWindow):
 
         self.new_still_btn = ttk.Button(self.Stills, text ="Capture stills", width = 10, command = self.create_new_still)
         self.new_still_btn.state(["disabled"])
-        self.cancelbtn = ttk.Button(self.Stills, text= "Exit", width=10, command = self.exit)
+        self.delete_still_btn = ttk.Button(self.Stills, text= "Delete Still", width=10, command = self.delete_selected_still)
+        self.delete_still_btn.state(["disabled"])
         
         self.new_scene_btn.grid(row=0, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
         self.delete_scene_btn.grid(row=1, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
 
         self.new_still_btn.grid(row=0, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
-        self.cancelbtn.grid(row=1, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
+        self.delete_still_btn.grid(row=1, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
     
     def create_new_scene (self):
         # create new scene in db and grab the inserted info
@@ -116,6 +117,21 @@ class SceneSelection(ttk.PanedWindow):
         # add scene to list in UI and select it for editing
         self.scene_tree.insert('', tkinter.END, values= scene_info, iid= scene_info[0])
         self.scene_tree.selection_set(scene_info[0])
+    
+    def delete_selected_still (self):
+        popup_window = Popup(self.parent_window, "Are you sure you want to delete this still?", confirmation=True)
+        popup_window.wait()
+
+        if popup_window.user_decision == False:
+            # User chose cancel so lets abort
+            return
+        
+        still_data = self.find_full_still_data(self.selected_still_info[0])
+        success = self.delete_still(still_data)
+        if not success:
+            Popup(self.parent_window, "Something went wrong and the still could not be deleted.")
+        
+        self.load_new_image_on_neighbour('loading_image.jpg')
 
     def delete_scene (self):
         popup_window = Popup(self.parent_window, "Deleting a scene will also delete all of the associated stills.\n Are you sure you want to proceed?", confirmation=True)
@@ -139,10 +155,6 @@ class SceneSelection(ttk.PanedWindow):
             # delete scene from db and remove from treeview
             db_processor.delete_scene(self.selected_scene_info[0])
             self.scene_tree.delete(self.selected_scene_info[0])
-
-            # disable the still creation/ scene deletion button as scene has been selected
-            self.new_still_btn.state(["disabled"])
-            self.delete_scene_btn.state(["disabled"])
 
             self.load_new_image_on_neighbour('loading_image.jpg')
 
@@ -303,6 +315,8 @@ class SceneSelection(ttk.PanedWindow):
 
         # check if tuple is empty and abort if so
         if not self.selected_scene_info:
+            self.new_still_btn.state(["disabled"])
+            self.delete_scene_btn.state(["disabled"])
             return
 
         # unselect any stills
@@ -337,14 +351,18 @@ class SceneSelection(ttk.PanedWindow):
 
        # check if tuple is empty and abort if so
        if not self.selected_still_info:
+           self.delete_still_btn.state(["disabled"])
            return
        
-       path = ''
-       for still in self.still_data:
-            if (str(still[0]) == str(self.selected_still_info[0])):
-                path = still[4]
-
+       path = self.find_full_still_data(self.selected_still_info[0])[4]
        self.load_new_image_on_neighbour(path)
+       self.delete_still_btn.state(["!disabled"])
+    
+    def find_full_still_data(self, still_id):
+        for still in self.still_data:
+            if (str(still[0]) == str(still_id)):
+                return still
+        return False
     
     def handle_click(self, event):
         """Event method called when treeview clicked/ when user attempts to resize columns, which
