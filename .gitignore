@@ -1,4 +1,5 @@
-**/Movie_1
+**/*Movie_*
 **/myenv
 movie_application_db.sqlite3
 *.avi
+**/__pycache__/

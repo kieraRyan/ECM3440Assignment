@@ -146,11 +146,11 @@ def create_new_still (still_name, scene_id, path) -> int:
     # return id of inserted movie
     return cursor.lastrowid
 
-def calculate_next_scene_name (movie_name, movie_id) -> str:
+def calculate_next_scene_name (movie_name) -> str:
     connection = get_connection()
     cursor = connection.cursor()
             
-    cursor.execute('SELECT id FROM "SCENE"  WHERE movieId = ? ORDER BY id DESC', (movie_id, ))
+    cursor.execute('SELECT id FROM "SCENE" ORDER BY id DESC')
     all_stills = cursor.fetchall();
 
     if len(all_stills) < 1:
@@ -183,7 +183,7 @@ def create_new_scene (movie_id, movie_name) -> list:
     connection = get_connection()
     cursor = connection.cursor()
 
-    cursor.execute('INSERT INTO SCENE (name, movieId, "order") VALUES (?, ?, ?);', (calculate_next_scene_name(movie_name, movie_id), movie_id, get_next_scene_num_for_movie(movie_id)))
+    cursor.execute('INSERT INTO SCENE (name, movieId, "order") VALUES (?, ?, ?);', (calculate_next_scene_name(movie_name), movie_id, get_next_scene_num_for_movie(movie_id)))
     connection.commit()
 
     cursor.execute('SELECT id, name, "order" FROM SCENE WHERE id= ?', (int(cursor.lastrowid), ))
@@ -216,5 +216,18 @@ def get_stills_for_movie (movie_id: int) -> object:
     connection.close()
     return records
 
+def get_movie_stills_in_order (movie_id: int):
+    connection = get_connection()
+    cursor = connection.cursor()
+    results = []
+    
+    cursor.execute('SELECT id FROM SCENE WHERE movieId = ? ORDER BY "ORDER" ASC;', (str(movie_id),))
+    scenes = cursor.fetchall()
+
+    for id in scenes:
+        results += cursor.execute('SELECT filePath FROM STILL WHERE sceneId = ? ORDER BY "ORDER" ASC;', (str(id[0]),)).fetchall()
+
+    connection.close()
+    return results
 
 # create_tables()

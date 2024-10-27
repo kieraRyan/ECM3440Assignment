@@ -9,7 +9,7 @@ class AppMain (ttk.Frame):
             self.columnconfigure(index, weight=1)
             self.rowconfigure(index, weight=1)
         
-        self.current_still_path = 'test.png'
+        self.current_still_path = 'loading_image.jpg'
         self.stills_to_play = []
 
         still_window = sm.StillManagement(self, movie_info)

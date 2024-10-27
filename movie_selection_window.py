@@ -130,15 +130,15 @@ class MovieSelectionWindow:
         image_folder = self.selectedRecord[1]
         video_name = f'{image_folder}.avi'
         
-        #TODO: Chnage this to compile the movie based on order of scenes and order of stills
-        images = [img for img in os.listdir(image_folder) if img.endswith(".png")]
-        frame = cv2.imread(os.path.join(image_folder, images[0]))
+        still_paths = db_processor.get_movie_stills_in_order(self.selectedRecord[0])
+        images = [img[0] for img in still_paths]
+        
+        frame = cv2.imread(images[0])
         height, width, layers = frame.shape
-
-        video = cv2.VideoWriter(video_name, 0, 1, (width,height))
+        video = cv2.VideoWriter(video_name, 0, 6, (width,height))
 
         for image in images:
-            video.write(cv2.imread(os.path.join(image_folder, image)))
+            video.write(cv2.imread(image))
 
         cv2.destroyAllWindows()
         video.release()

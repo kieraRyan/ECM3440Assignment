@@ -268,6 +268,11 @@ class SceneSelection(ttk.PanedWindow):
     def still_selected (self, event):
        # grab the selected record and its filepath
        self.selected_still_info = self.still_tree.item(self.still_tree.selection(), 'values')
+
+       # check if tuple is empty and abort if so
+       if not self.selected_still_info:
+           return
+       
        path = ''
        for still in self.still_data:
             if (str(still[0]) == str(self.selected_still_info[0])):
