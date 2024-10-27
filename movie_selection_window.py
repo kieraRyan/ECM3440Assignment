@@ -3,8 +3,8 @@ from tkinter import ttk
 import db_processor
 import movie_editing_window
 import sv_ttk
-import os
 import cv2
+from Popup import Popup
 
 class MovieSelectionWindow:
 
@@ -109,21 +109,6 @@ class MovieSelectionWindow:
         """Event method that closes window/ program when exit button selected"""
         self.win.destroy()
         exit()       
-
-    def close_popup(self, event):
-        """Event method to close popup when OK button clicked"""
-        self.popup.destroy()
-
-    def create_popup(self, errorMessage):
-        """Creates popup window showing relevant error message, depending on reason for exception."""
-        self.popup = tkinter.Toplevel(self.win)
-        self.popup.geometry('500x100')
-        self.popup.resizable(0,0)
-        errorMessage= tkinter.Label(self.popup, text = errorMessage)
-        errorMessage.pack()
-        escape_button = ttk.Button(self.popup, text= 'OK')
-        escape_button.pack()
-        escape_button.bind('<Button-1>', self.close_popup)
     
     def export_movie(self):
         
@@ -143,4 +128,4 @@ class MovieSelectionWindow:
         cv2.destroyAllWindows()
         video.release()
 
-        self.create_popup('Movie created and saved to movies folder')
+        Popup(self.win, 'Movie created and saved to movies folder')

@@ -6,6 +6,7 @@ import os
 import numpy as np
 from StillManagement import StillManagement
 from PIL import Image
+from Popup import Popup
 
 class SceneSelection(ttk.PanedWindow):
     def __init__(self, parent, movie_info, still_window: StillManagement):
@@ -95,8 +96,8 @@ class SceneSelection(ttk.PanedWindow):
                 getattr(self, heading).rowconfigure(index, weight=1)
         
         self.new_scene_btn = ttk.Button(self.Scenes, text ="New Scene", width = 10, command = self.create_new_scene)
-        self.delete_scene_btn = ttk.Button(self.Scenes, text ="Delete Scene", width = 10, command = self.scene_selected)
-        self.play_scene_btn = ttk.Button(self.Scenes, text ="Play Scene", width = 10, command = self.scene_selected)
+        self.delete_scene_btn = ttk.Button(self.Scenes, text ="Delete Scene", width = 10, command = self.delete_scene)
+        self.delete_scene_btn.state(["disabled"])
 
         self.new_still_btn = ttk.Button(self.Stills, text ="Capture stills", width = 10, command = self.create_new_still)
         self.new_still_btn.state(["disabled"])
@@ -104,7 +105,6 @@ class SceneSelection(ttk.PanedWindow):
         
         self.new_scene_btn.grid(row=0, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
         self.delete_scene_btn.grid(row=1, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
-        self.play_scene_btn.grid(row=2, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
 
         self.new_still_btn.grid(row=0, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
         self.cancelbtn.grid(row=1, column=0, padx=(20, 10), pady=(20, 10), sticky="ew")
@@ -117,6 +117,70 @@ class SceneSelection(ttk.PanedWindow):
         self.scene_tree.insert('', tkinter.END, values= scene_info, iid= scene_info[0])
         self.scene_tree.selection_set(scene_info[0])
 
+    def delete_scene (self):
+        popup_window = Popup(self.parent_window, "Deleting a scene will also delete all of the associated stills.\n Are you sure you want to proceed?", confirmation=True)
+        popup_window.wait()
+
+        if popup_window.user_decision == False:
+            # User chose cancel so lets abort
+            return
+        
+        try:
+            # unselect any stills
+            if len(self.still_tree.selection()) > 0:
+                self.still_tree.selection_remove(self.still_tree.selection()[0])
+
+            # delete associated stills first and remove from treeview
+            success = self.delete_all_stills_in_treeview()
+            if not success:
+                Popup(self.parent_window, "The stills associated with this scene could not be deleted.")
+                return
+        
+            # delete scene from db and remove from treeview
+            db_processor.delete_scene(self.selected_scene_info[0])
+            self.scene_tree.delete(self.selected_scene_info[0])
+
+            # disable the still creation/ scene deletion button as scene has been selected
+            self.new_still_btn.state(["disabled"])
+            self.delete_scene_btn.state(["disabled"])
+
+            self.load_new_image_on_neighbour('loading_image.jpg')
+
+        except Exception as e:
+            Popup(self.parent_window, "Something went wrong and the scene could not be deleted.")
+            print(e)
+
+    def delete_all_stills_in_treeview (self) -> bool:
+        for still in self.still_data:
+            success = self.delete_still(still)
+            if not success:
+                return False
+            
+        return True
+    
+    def delete_still (self, still_data: list) -> bool:
+        try:
+           # attempt to delete still from db first
+            still_id = still_data[0]
+            success = db_processor.delete_still(still_id)
+
+            if not success:
+                return False
+
+            # if successful, delete still from OS and treeview
+            file_path = still_data[4]
+
+            if os.path.exists(file_path):
+                os.remove(file_path)
+            else:
+                raise Exception(file_path + " not found")
+
+            self.still_tree.delete(still_id)
+            return True
+
+        except Exception as e:
+            print("Still " + str(still_id) + ' could not be deleted due to: ' + str(e))
+            return False
     
     def create_new_still (self):
         cam = cv.VideoCapture(0)
@@ -198,7 +262,6 @@ class SceneSelection(ttk.PanedWindow):
         current_path = os.path.dirname(os.path.realpath(__file__))
 
         # calc folder path based on movie name
-        print('trying to save scene ' + str(self.selected_scene_info))
         folder_path = self.movie_info[1]
        
        # calculate the name based on the still name
@@ -207,19 +270,17 @@ class SceneSelection(ttk.PanedWindow):
         # save the file in a specific folder related to the movie
         if not os.path.exists(folder_path):
             os.mkdir(folder_path)
-            print(f"Folder '{folder_path}' created.")
 
         os.chdir(folder_path)
         success = cv.imwrite(img_name, frame)
         
         if not success:
-            print("Error saving image")
+            Popup(self.parent_window, "Error saving image")
         
         # change directory back to og
         os.chdir(current_path)
 
         file_path = folder_path + '/' + img_name
-        print(file_path)
 
         # save image to db now
         db_processor.create_new_still(img_name, self.selected_scene_info[0], file_path)
@@ -240,14 +301,19 @@ class SceneSelection(ttk.PanedWindow):
        # grab the selected record
         self.selected_scene_info = self.scene_tree.item(self.scene_tree.selection(), 'values')
 
+        # check if tuple is empty and abort if so
+        if not self.selected_scene_info:
+            return
+
         # unselect any stills
         if len(self.still_tree.selection()) > 0:
             self.still_tree.selection_remove(self.still_tree.selection()[0])
 
         self.update_still_data()
 
-        # enable the still creation button button as scene has been selected
+        # enable the still creation/ scene deletion button as scene has been selected
         self.new_still_btn.state(["!disabled"])
+        self.delete_scene_btn.state(["!disabled"])
     
     def update_still_data(self):
         # STILL.id, STILL.name, SCENE.id AS scene_id, STILL."order", STILL.filePath

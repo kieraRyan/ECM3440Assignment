@@ -192,6 +192,36 @@ def create_new_scene (movie_id, movie_name) -> list:
 
     return insert_record
 
+def delete_still (still_id: int) -> bool:
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+        # first delete all related stills
+        cursor.execute('DELETE FROM STILL WHERE id = ?;', (int(still_id), ))
+        connection.commit()
+
+        connection.close()
+        return True
+    except sqlite3.OperationalError as e:
+        connection.rollback()
+        connection.close()
+        return False
+    
+def delete_scene (scene_id: int) -> bool:
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
+
+        cursor.execute('DELETE FROM SCENE WHERE id= ?;', (int(scene_id), ))
+        connection.commit()
+
+        connection.close()
+        return True
+    except sqlite3.OperationalError as e:
+        connection.rollback()
+        connection.close()
+        return False
+
 def get_connection():
     cnn = sqlite3.connect('movie_application_db.sqlite3')
     return cnn
