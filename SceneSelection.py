@@ -195,6 +195,13 @@ class SceneSelection(ttk.PanedWindow):
             return False
     
     def create_new_still (self):
+        """
+        Launches image capture window allowing user to capture images and alter brightness, contrast, orientation and sharpness
+
+        Parameters: None
+
+        Returns: None
+        """
         cam = cv.VideoCapture(0)
 
         # default picture settings
@@ -270,7 +277,16 @@ class SceneSelection(ttk.PanedWindow):
         cam.release()
         cv.destroyAllWindows()
 
-    def save_still (self, frame) :
+    def save_still (self, frame: cv.typing.MatLike) -> None :
+        """
+        Saves the given image to the OS and the database
+        Refreshes the image displayed on the screen to be the saved image
+
+        Parameters:
+            frame (cv.typing.MatLike): Image to be saved
+
+        Returns: None
+        """
         current_path = os.path.dirname(os.path.realpath(__file__))
 
         # calc folder path based on movie name
@@ -297,6 +313,7 @@ class SceneSelection(ttk.PanedWindow):
         # save image to db now
         db_processor.create_new_still(img_name, self.selected_scene_info[0], file_path)
 
+        # refresh the image displayed on the scene
         self.load_new_image_on_neighbour(file_path)
         self.update_still_data()
 
