@@ -2,7 +2,10 @@ from tkinter import ttk
 import StillManagement as sm
 import SceneSelection as ss
 
-class AppMain (ttk.Frame):
+class MovieEditingWindow (ttk.Frame):
+      """Main movie editing window
+        Creates two frames - one for still creation and management and one for scene creation and management.
+        Initalises global attributes to be used by child frames."""
       def __init__(self, window, movie_info):
         super().__init__(window, padding=15)
         for index in range(2):

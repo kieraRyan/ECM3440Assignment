@@ -32,17 +32,14 @@ class SceneSelection(ttk.PanedWindow):
         self.add_widgets()
 
     def add_widgets(self):
-        self.scrollbar = ttk.Scrollbar(self.pane_1)
 
         self.scene_tree = ttk.Treeview(
             self.pane_1,
             columns=self.scene_fields,
             height=6,
             selectmode="browse",
-            show=("headings",),
-            yscrollcommand=self.scrollbar.set,
+            show=("headings",)
         )
-        self.scrollbar.config(command=self.scene_tree.yview)
 
         self.scene_tree.pack(expand=True, fill="both")
 
@@ -60,7 +57,6 @@ class SceneSelection(ttk.PanedWindow):
         # scrollbars
         self.still_scrollbar = ttk.Scrollbar(self.pane_1)
         self.still_scrollbar.pack(side="right", fill="y")
-        self.scrollbar.pack(side="right", fill="y")
 
         self.still_tree = ttk.Treeview(
             self.pane_1,
