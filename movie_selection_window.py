@@ -101,7 +101,7 @@ class MovieSelectionWindow:
         window.geometry("1000x650+10+10")
         # window.resizable(0, 0)
 
-        movie_editing_window.AppMain(window, window_info).pack(expand=True, fill ='both')
+        movie_editing_window.MovieEditingWindow(window, window_info).pack(expand=True, fill ='both')
         sv_ttk.set_theme("dark")
         window.mainloop()
 
