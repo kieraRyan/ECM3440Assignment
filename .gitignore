@@ -1,5 +1,5 @@
 **/*Movie_*
-**/myenv
+**/myenv/
 movie_application_db.sqlite3
 *.avi
 **/__pycache__/

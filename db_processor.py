@@ -4,7 +4,8 @@ import os
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 def create_tables() -> bool:
-        """Creates the Order, Item and OrderItem tables within the database.
+        """
+        Creates the Order, Item and OrderItem tables within the database.
         Returns True/ False to indicate the success of the above.
         """
         connection = get_connection()
@@ -26,7 +27,6 @@ def create_tables() -> bool:
             connection.commit()
             connection.close()
         except sqlite3.OperationalError as e:
-            print(e)
             connection.rollback()
             connection.close()
 
@@ -178,19 +178,27 @@ def get_next_scene_num_for_movie (movie_id) -> int:
     connection.close()
     return order
 
-def create_new_scene (movie_id, movie_name) -> list:
-    
-    connection = get_connection()
-    cursor = connection.cursor()
+def create_new_scene (movie_id: int, movie_name: str) -> tuple:
+    """
+    Creates new record in the SCENE table referncing the input movie ID 
+    Returns the created record in a tuple format if success and an empty tuple if not successful
+    """
+    try:
+        connection = get_connection()
+        cursor = connection.cursor()
 
-    cursor.execute('INSERT INTO SCENE (name, movieId, "order") VALUES (?, ?, ?);', (calculate_next_scene_name(movie_name), movie_id, get_next_scene_num_for_movie(movie_id)))
-    connection.commit()
+        cursor.execute('INSERT INTO SCENE (name, movieId, "order") VALUES (?, ?, ?);', (calculate_next_scene_name(movie_name), movie_id, get_next_scene_num_for_movie(movie_id)))
+        connection.commit()
 
-    cursor.execute('SELECT id, name, "order" FROM SCENE WHERE id= ?', (int(cursor.lastrowid), ))
-    insert_record = cursor.fetchone()
-    connection.close()
+        cursor.execute('SELECT id, name, "order" FROM SCENE WHERE id= ?', (int(cursor.lastrowid), ))
+        insert_record = cursor.fetchone()
+        connection.close()
 
-    return insert_record
+        return insert_record
+    except sqlite3.OperationalError as e:
+        connection.rollback()
+        connection.close()
+        return ()
 
 def delete_still (still_id: int) -> bool:
     try:
