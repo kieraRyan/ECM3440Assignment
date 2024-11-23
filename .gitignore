@@ -1,5 +1,7 @@
 **/*Movie_*
+**/build*
 **/myenv/
 movie_application_db.sqlite3
 *.avi
 **/__pycache__/
+*.spec

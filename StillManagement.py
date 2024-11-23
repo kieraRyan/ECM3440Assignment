@@ -1,7 +1,9 @@
 
 import tkinter
 from tkinter import ttk
-from PIL import Image, ImageTk, ImageEnhance
+from PIL import Image
+from PIL import ImageTk
+from PIL import ImageEnhance
 
 class StillManagement (ttk.PanedWindow):
     def __init__(self, parent, movie_info):

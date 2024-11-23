@@ -3,12 +3,11 @@ import csv
 import os 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-def create_tables() -> bool:
+def create_tables(connection) -> bool:
         """
         Creates the Order, Item and OrderItem tables within the database.
         Returns True/ False to indicate the success of the above.
         """
-        connection = get_connection()
         cursor = connection.cursor()
         try:
             cursor.execute('DROP TABLE IF EXISTS MOVIE;')
@@ -25,7 +24,7 @@ def create_tables() -> bool:
            
             # Commit the changes to the database
             connection.commit()
-            connection.close()
+
         except sqlite3.OperationalError as e:
             connection.rollback()
             connection.close()
@@ -230,8 +229,24 @@ def delete_scene (scene_id: int) -> bool:
         connection.close()
         return False
 
+def tables_exist (connection):
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name = ? OR name = ? or name = ?", ('MOVIE', 'STILL', 'SCENE'))
+        records = cursor.fetchall()
+        if (len(records) < 3):
+            return False
+        
+        return True
+
+    except sqlite3.OperationalError as e:
+        return False
+
 def get_connection():
     cnn = sqlite3.connect('movie_application_db.sqlite3')
+    if not tables_exist(cnn):
+        create_tables(cnn)
     return cnn
 
 def get_all_stills () -> object:
@@ -267,5 +282,3 @@ def get_movie_stills_in_order (movie_id: int):
 
     connection.close()
     return results
-
-# create_tables()
