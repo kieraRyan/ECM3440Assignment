@@ -156,8 +156,16 @@ class StillManagement (ttk.PanedWindow):
 
         self.load_image()
 
-    def change_brightness (self, event):
-        # update the brightness label
+    def change_brightness (self, event: object):
+        """
+        Updates the brightness of the currently displayed image and reflects this in the Brightness slider label
+        
+        Parameters:
+            event (object): The user action which triggered this function 
+
+        Returns: None
+        """
+        # need to update label to reflect the brightness value change
         self.brightness_label.config(text = f"Brightness: {int(self.brightness_slider.get())}%")
         self.transform_image()
     
